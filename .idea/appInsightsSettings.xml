@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.example.portalab" />
+                  <option name="mobileSdkAppId" value="1:666945024519:android:cc1985fd483159081cf0a2" />
+                  <option name="projectId" value="portalab-e1250" />
+                  <option name="projectNumber" value="666945024519" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

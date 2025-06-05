@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "666945024519",
+    "project_id": "portalab-e1250",
+    "storage_bucket": "portalab-e1250.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:666945024519:android:cc1985fd483159081cf0a2",
+        "android_client_info": {
+          "package_name": "com.example.portalab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBE5Ap9-0nEs46hoT9sn_PRGyVpT8wYURo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
