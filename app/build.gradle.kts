@@ -29,10 +29,6 @@ android {
         }
     }
 
-    // es necesario para usar ViewBinding
-    buildFeatures{
-        viewBinding = true
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -69,16 +65,14 @@ dependencies {
 
 
 
-    //firebase firestore
-    implementation("com.google.firebase:firebase-firestore:25.1.4")
-    implementation("com.google.firebase:firebase-core")
+    // Firebase sin versión explícita (la BOM la gestiona)
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+
 
     // Firebase dependencies
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
-
-
-    // Firebase Messaging
-    implementation("com.google.firebase:firebase-messaging-ktx:23.1.0")
 
 
     //Viewmodal

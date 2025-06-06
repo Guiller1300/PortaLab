@@ -6,12 +6,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.portalab.ui.InventarioScreen
 import com.example.portalab.ui.theme.PortaLabTheme
+import androidx.compose.material3.Surface
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,11 +23,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PortaLabTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                Surface(
+                    modifier = androidx.compose.ui.Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    InventarioScreen() // 👈 Aquí se lanza tu pantalla
                 }
             }
         }
@@ -42,6 +46,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     PortaLabTheme {
-        Greeting("Android")
+        //Greeting("Android")
+        InventarioScreen() // 👈 Aquí se lanza tu pantalla
     }
 }

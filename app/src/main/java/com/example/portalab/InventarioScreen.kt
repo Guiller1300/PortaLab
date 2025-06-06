@@ -17,8 +17,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import com.example.portalab.ui.theme.PortaLabTheme
 import com.example.portalab.ui.theme.Purple40
+import com.example.portalab.ui.theme.Purple80
+import androidx.compose.material3.ExperimentalMaterial3Api
 
-
+@Preview(showBackground = true)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventarioScreen() {
     val equipos = remember { mutableStateListOf<Equipo>() }
@@ -42,35 +45,36 @@ fun InventarioScreen() {
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("Inventario de Equipos") }
             )
         },
-        content = {
-            if (loading.value) {
-                CircularProgressIndicator(modifier = Modifier.fillMaxSize()) // Muestra un cargador
-            } else if (error.value != null) {
-                Text(text = error.value!!, color = MaterialTheme.colorScheme.error)
-            } else {
-                LazyColumn(modifier = Modifier.padding(16.dp)) {
-                    items(equipos) { equipo ->
-                        EquipoCard(equipo)
+        content = { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                if (loading.value) {
+                    CircularProgressIndicator(modifier = Modifier.fillMaxSize()) // Muestra un cargador
+                } else if (error.value != null) {
+                    Text(text = error.value!!, color = MaterialTheme.colorScheme.error)
+                } else {
+                    LazyColumn(modifier = Modifier.padding(16.dp)) {
+                        items(equipos) { equipo ->
+                            EquipoCard(equipo)
+                        }
                     }
                 }
             }
         }
     )
-
 }
 
 @Composable
 fun EquipoCard(equipo: Equipo) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = 4.dp
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Inventario: ${equipo.inventario}", style = MaterialTheme.typography.h6)
+            Text("Inventario: ${equipo.inventario}", style = MaterialTheme.typography.headlineSmall)
             Text("Nombre: ${equipo.nombre}")
             Text("Descripción: ${equipo.descripcion}")
             Text("Estado: ${equipo.estado}")
