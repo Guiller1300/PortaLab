@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,14 +15,25 @@ import androidx.compose.ui.window.Dialog
 import com.example.portalab.model.Equipo
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
-import androidx.compose.material.icons.filled.Edit  // <--- Este es el nuevo que te falta
 import androidx.compose.material3.Button
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.CoroutineScope
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InventarioScreen() {
+fun InventarioScreen(
+    drawerState: DrawerState, coroutineScope: CoroutineScope
+) {
     val equipos = remember { mutableStateListOf<Equipo>() }
     var showDialog by remember { mutableStateOf(false) }
     var equipoAEliminar by remember { mutableStateOf<Equipo?>(null) }
@@ -31,8 +41,15 @@ fun InventarioScreen() {
     var loading by remember { mutableStateOf(true) }
     var query by remember { mutableStateOf("") }
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    var buscarActivo by remember { mutableStateOf(false) } // Controla si el campo de búsqueda está activo
+
+
+    val snackbarHostState = remember { SnackbarHostState() } // Estado para la barra de notificaciones
+    val coroutineScope = rememberCoroutineScope() // CoroutineScope para manejar corutinas
+
+    var sortOption by remember { mutableStateOf("Nombre") } // Opción de ordenación inicial
+    var sortMenuExpanded by remember { mutableStateOf(false) } // Controla si el menú de ordenación está abierto
+
 
     // 🔄 Cargar datos
     LaunchedEffect(Unit) {
@@ -53,14 +70,90 @@ fun InventarioScreen() {
     }
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Inventario de Equipos") }
+        topBar = { // Barra de navegación superior
+            TopAppBar(
+                title = {
+                    if (buscarActivo) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            placeholder = { Text("Buscar equipo...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    } else {
+                        Text("Inventarios")
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        coroutineScope.launch { drawerState.open() }
+                    }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Abrir menú")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        buscarActivo = !buscarActivo
+                        if (!buscarActivo) query = ""
+                    }) {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
+                    }
+
+                    Box {
+                        IconButton(onClick = { sortMenuExpanded = true }) {
+                            Icon(Icons.Default.FilterList, contentDescription = "Ordenar")
+                        }
+
+                        DropdownMenu(
+                            expanded = sortMenuExpanded,
+                            onDismissRequest = { sortMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Ordenar por Nombre") },
+                                onClick = {
+                                    sortOption = "Nombre"
+                                    sortMenuExpanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ordenar por Estado") },
+                                onClick = {
+                                    sortOption = "Estado"
+                                    sortMenuExpanded = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Ordenar por Inventario") },
+                                onClick = {
+                                    sortOption = "Inventario"
+                                    sortMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = {
+                        // Aquí va tu lógica de menú ⋮
+                    }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Más")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF26C6DA),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
         },
+
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar equipo")
             }
         }
@@ -93,20 +186,15 @@ fun InventarioScreen() {
                                 it.inventario.contains(query, ignoreCase = true) ||
                                 it.estado.contains(query, ignoreCase = true) ||
                                 it.laboratorio.contains(query, ignoreCase = true)
-                    }
-
+                    }.sortedWith(
+                        when (sortOption) {
+                            "Nombre" -> compareBy { it.nombre }
+                            "Estado" -> compareBy { it.estado }
+                            "Inventario" -> compareBy { it.inventario }
+                            else -> compareBy { it.nombre }
+                        }
+                    )
                     Column(Modifier.padding(horizontal = 16.dp)) {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = { query = it },
-                            label = { Text("Buscar equipo...") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
                         LazyColumn {
                             items(filtrados) { equipo ->
                                 EquipoCard(
@@ -225,61 +313,72 @@ fun EquipoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = equipo.nombre,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text("Inventario: ${equipo.inventario}", style = MaterialTheme.typography.bodySmall)
-            Text("Descripción: ${equipo.descripcion}", style = MaterialTheme.typography.bodySmall)
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                AssistChip(
-                    onClick = { },
-                    label = { Text("Estado: ${equipo.estado}") },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = when (equipo.estado.lowercase()) {
-                            "excelente", "activo" -> MaterialTheme.colorScheme.tertiaryContainer
-                            "malo", "dañado" -> MaterialTheme.colorScheme.errorContainer
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    )
+                Text(
+                    text = equipo.nombre,
+                    style = MaterialTheme.typography.titleMedium
                 )
 
-                Row {
-                    IconButton(onClick = { onEdit(equipo) }) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Editar"
-                        )
-                    }
-                    IconButton(onClick = { onDelete(equipo) }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Eliminar"
-                        )
-                    }
+                Text(
+                    text = "${equipo.inventario} • ${equipo.estado} • ${equipo.descripcion}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = equipo.laboratorio,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            // Menú de opciones con ícono ⋮
+            var expanded by remember { mutableStateOf(false) }
+
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Editar") },
+                        onClick = {
+                            expanded = false
+                            onEdit(equipo)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Eliminar") },
+                        onClick = {
+                            expanded = false
+                            onDelete(equipo)
+                        }
+                    )
                 }
             }
         }
     }
 }
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -543,4 +642,3 @@ fun EditarEquipoDialog(
         }
     }
 }
-

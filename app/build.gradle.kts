@@ -96,6 +96,13 @@ dependencies {
     implementation("com.google.firebase:firebase-auth:22.3.0") // o versión reciente
 
 
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
+
+
+
+
 
 
 
