@@ -63,16 +63,17 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 
+    // Firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
 
 
     // Firebase sin versión explícita (la BOM la gestiona)
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging-ktx")
 
 
 
-    // Firebase dependencies
-    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
 
 
     //Viewmodal
@@ -84,6 +85,20 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview:1.2.0") // Previews
     implementation("androidx.compose.foundation:foundation:1.2.0") // Foundation Compose
     implementation("androidx.compose.runtime:runtime-livedata:1.2.0") // Livedata para Compose
+
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.compose.material3:material3:1.2.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    implementation("com.google.firebase:firebase-auth:22.3.0") // o versión reciente
+
+
+
+
+
 
 
 }
