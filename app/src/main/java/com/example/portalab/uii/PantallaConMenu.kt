@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Badge
 import androidx.compose.ui.res.painterResource
 import com.example.portalab.R // Esto es necesario para acceder a tus recursos de drawable
@@ -54,6 +55,7 @@ import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Home
 
 @Composable
 fun PantallaConMenu(
@@ -114,6 +116,7 @@ fun PantallaConMenu(
 
                 // Ítems del menú
                 val items = listOf(
+                    Triple("Dashboard", Icons.Default.Home, "dashboard"),
                     Triple("Laboratorios", Icons.Default.Lan, "laboratorios"),
                     Triple("Inventario", Icons.Default.Inventory, "inventario"),
                     Triple("Software", Icons.Default.Star, "software"),

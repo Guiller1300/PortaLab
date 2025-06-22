@@ -122,7 +122,7 @@ fun LoginScreenStyled(navController: NavController) {
                                     .addOnCompleteListener { task ->
                                         loading = false
                                         if (task.isSuccessful) {
-                                            navController.navigate("inventario") {
+                                            navController.navigate("dashboard") {
                                                 popUpTo("login") { inclusive = true }
                                             }
                                         } else {

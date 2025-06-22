@@ -1,5 +1,6 @@
 package com.example.portalab
 
+import DashboardScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,6 +28,11 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("login") {
                         LoginScreenStyled(navController)
+                    }
+                    composable("dashboard") {
+                        PantallaConMenu(navController = navController) { drawerState, scope ->
+                            DashboardScreen(drawerState, scope, navController) // <-- Aquí lo pasas
+                        }
                     }
                     composable("inventario") {
                         PantallaConMenu(navController = navController) { drawerState, scope ->
