@@ -139,6 +139,37 @@ fun PantallaConMenu(
                     },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
+                NavigationDrawerItem(
+                    label = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Star, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text("Software")
+                        }
+                    },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        navController?.navigate("software")
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+
+                NavigationDrawerItem(
+                    label = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Star, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text("Instalaciones")
+                        }
+                    },
+                    selected = false,
+                    onClick = {
+                        coroutineScope.launch { drawerState.close() }
+                        navController?.navigate("instalacionSoftware")
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
 
                 NavigationDrawerItem(
                     label = {
@@ -157,6 +188,7 @@ fun PantallaConMenu(
                     },
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
+
             }
         }
     ) {

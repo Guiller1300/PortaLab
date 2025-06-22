@@ -46,66 +46,39 @@ android {
 }
 
 dependencies {
+    // Core y Jetpack básicos
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.9.0")
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    // Jetpack Compose (usando BOM para consistencia)
+    implementation(platform("androidx.compose:compose-bom:2024.04.01"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.runtime:runtime-livedata")
 
-    // Firebase dependencies
+    // Firebase (con BOM para manejar versiones)
     implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
-
-
-    // Firebase sin versión explícita (la BOM la gestiona)
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-messaging-ktx")
 
-
-
-
-
-    //Viewmodal
-    //implementation('androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1')
-
-    // Jetpack Compose
-    implementation("androidx.compose.ui:ui:1.2.0") // Última versión estable de UI
-    implementation("androidx.compose.material3:material3:1.0.0")  // Material3
-    implementation("androidx.compose.ui:ui-tooling-preview:1.2.0") // Previews
-    implementation("androidx.compose.foundation:foundation:1.2.0") // Foundation Compose
-    implementation("androidx.compose.runtime:runtime-livedata:1.2.0") // Livedata para Compose
-
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.compose.material3:material3:1.2.0")
-
+    // Otras utilidades
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-    implementation("androidx.navigation:navigation-compose:2.7.7")
-
-    implementation("com.google.firebase:firebase-auth:22.3.0") // o versión reciente
-
-
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.4.0")
 
+    // Test
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.04.01"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
-
-
-
-
-
-
-
-
+    // Debug
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
