@@ -67,6 +67,8 @@ fun PantallaConMenu(
     val correo = usuario?.email ?: "correo@ejemplo.com"
     val imagenUrl = usuario?.photoUrl
 
+    var mostrarDialogoCerrarSesion by remember { mutableStateOf(false) }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -75,11 +77,12 @@ fun PantallaConMenu(
                     .fillMaxHeight()
                     .padding(top = 8.dp)
             ) {
+                // Encabezado
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
-                        .padding(16.dp),
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     if (imagenUrl != null) {
@@ -96,8 +99,9 @@ fun PantallaConMenu(
                             contentDescription = "Icono perfil",
                             modifier = Modifier
                                 .size(72.dp)
-                                .background(Color.LightGray, CircleShape)
-                                .padding(16.dp)
+                                .background(Color.Gray, CircleShape)
+                                .padding(16.dp),
+                            tint = Color.White
                         )
                     }
 
@@ -106,39 +110,35 @@ fun PantallaConMenu(
                     Text(correo, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
-                NavigationDrawerItem(
-                    label = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lan, contentDescription = null)
-                            Spacer(Modifier.width(12.dp))
-                            Text("Laboratorios")
-                        }
-                    },
-                    selected = false,
-                    onClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        navController?.navigate("laboratorios")
-                    },
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                // Ítems del menú
+                val items = listOf(
+                    Triple("Laboratorios", Icons.Default.Lan, "laboratorios"),
+                    Triple("Inventario", Icons.Default.Inventory, "inventario"),
+                    Triple("Software", Icons.Default.Star, "software"),
+                    Triple("Instalaciones", Icons.Default.Star, "instalacionSoftware")
                 )
 
-                NavigationDrawerItem(
-                    label = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Inventory, contentDescription = null)
-                            Spacer(Modifier.width(12.dp))
-                            Text("Inventario")
-                        }
-                    },
-                    selected = false,
-                    onClick = {
-                        coroutineScope.launch { drawerState.close() }
-                        navController?.navigate("inventario")
-                    },
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
+                items.forEach { (label, icon, route) ->
+                    NavigationDrawerItem(
+                        label = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(icon, contentDescription = null)
+                                Spacer(Modifier.width(12.dp))
+                                Text(label)
+                            }
+                        },
+                        selected = false,
+                        onClick = {
+                            coroutineScope.launch { drawerState.close() }
+                            navController?.navigate(route)
+                        },
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
 
                 NavigationDrawerItem(
                     label = {
@@ -150,16 +150,38 @@ fun PantallaConMenu(
                     },
                     selected = false,
                     onClick = {
-                        FirebaseAuth.getInstance().signOut()
-                        navController?.navigate("login") {
-                            popUpTo("inventario") { inclusive = true }
-                        }
+                        mostrarDialogoCerrarSesion = true
                     },
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp)
                 )
+
+                if (mostrarDialogoCerrarSesion) {
+                    AlertDialog(
+                        onDismissRequest = { mostrarDialogoCerrarSesion = false },
+                        title = { Text("Confirmar cierre de sesión") },
+                        text = { Text("¿Estás seguro de que deseas cerrar sesión?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                FirebaseAuth.getInstance().signOut()
+                                navController?.navigate("login") {
+                                    popUpTo("inventario") { inclusive = true }
+                                }
+                                mostrarDialogoCerrarSesion = false
+                            }) {
+                                Text("Sí")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { mostrarDialogoCerrarSesion = false }) {
+                                Text("Cancelar")
+                            }
+                        }
+                    )
+                }
             }
         }
     ) {
         contenido(drawerState, coroutineScope)
     }
 }
+

@@ -38,6 +38,16 @@ class MainActivity : ComponentActivity() {
                             LaboratorioScreen(drawerState, scope)
                         }
                     }
+                    composable("software") {
+                        PantallaConMenu(navController = navController) { drawerState, scope ->
+                            SoftwareScreen(drawerState, scope)
+                        }
+                    }
+                    composable("instalacionSoftware") {
+                        PantallaConMenu(navController = navController) { drawerState, scope ->
+                            InstalacionSoftwareScreen(drawerState, scope)
+                        }
+                    }
                 }
             }
         }

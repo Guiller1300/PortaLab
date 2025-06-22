@@ -27,6 +27,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.CoroutineScope
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DrawerState
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
+import com.example.portalab.model.InstalacionSoftware
+import com.example.portalab.model.Software
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,18 +50,19 @@ fun InventarioScreen(
     var equipoAEditar by remember { mutableStateOf<Equipo?>(null) }
     var loading by remember { mutableStateOf(true) }
     var query by remember { mutableStateOf("") }
+    var buscarActivo by remember { mutableStateOf(false) }
 
-    var buscarActivo by remember { mutableStateOf(false) } // Controla si el campo de búsqueda está activo
+    val instalaciones = remember { mutableStateListOf<InstalacionSoftware>() }
+    val softwares = remember { mutableStateListOf<Software>() }
+    var equipoSeleccionado by remember { mutableStateOf<Equipo?>(null) }
+    var mostrarSoftwaresDialog by remember { mutableStateOf(false) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    val snackbarHostState = remember { SnackbarHostState() } // Estado para la barra de notificaciones
-    val coroutineScope = rememberCoroutineScope() // CoroutineScope para manejar corutinas
+    var sortOption by remember { mutableStateOf("Nombre") }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
 
-    var sortOption by remember { mutableStateOf("Nombre") } // Opción de ordenación inicial
-    var sortMenuExpanded by remember { mutableStateOf(false) } // Controla si el menú de ordenación está abierto
-
-
-    // 🔄 Cargar datos
     LaunchedEffect(Unit) {
         FirebaseFirestore.getInstance().collection("equipos")
             .get()
@@ -67,10 +78,24 @@ fun InventarioScreen(
                     snackbarHostState.showSnackbar("Error al cargar equipos")
                 }
             }
+
+        FirebaseFirestore.getInstance().collection("instalaciones")
+            .get()
+            .addOnSuccessListener { result ->
+                instalaciones.clear()
+                instalaciones.addAll(result.mapNotNull { it.toObject(InstalacionSoftware::class.java) })
+            }
+
+        FirebaseFirestore.getInstance().collection("softwares")
+            .get()
+            .addOnSuccessListener { result ->
+                softwares.clear()
+                softwares.addAll(result.mapNotNull { it.toObject(Software::class.java) })
+            }
     }
 
     Scaffold(
-        topBar = { // Barra de navegación superior
+        topBar = {
             TopAppBar(
                 title = {
                     if (buscarActivo) {
@@ -133,9 +158,7 @@ fun InventarioScreen(
                         }
                     }
 
-                    IconButton(onClick = {
-                        // Aquí va tu lógica de menú ⋮
-                    }) {
+                    IconButton(onClick = {}) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Más")
                     }
                 },
@@ -203,7 +226,11 @@ fun InventarioScreen(
                                 EquipoCard(
                                     equipo = equipo,
                                     onDelete = { equipoAEliminar = it },
-                                    onEdit = { equipoAEditar = it }
+                                    onEdit = { equipoAEditar = it },
+                                    onViewSoftwares = {
+                                        equipoSeleccionado = equipo
+                                        mostrarSoftwaresDialog = true
+                                    }
                                 )
                             }
                         }
@@ -212,6 +239,14 @@ fun InventarioScreen(
             }
         }
     }
+
+    if (mostrarSoftwaresDialog && equipoSeleccionado != null) {
+        VerSoftwareInstalado(
+            equipoNombre = equipoSeleccionado!!.nombre,
+            onClose = { mostrarSoftwaresDialog = false }
+        )
+    }
+
 
     // Diálogo Agregar
     if (showDialog) {
@@ -311,7 +346,9 @@ fun InventarioScreen(
 fun EquipoCard(
     equipo: Equipo,
     onDelete: (Equipo) -> Unit,
-    onEdit: (Equipo) -> Unit
+    onEdit: (Equipo) -> Unit,
+    onViewSoftwares: (String) -> Unit // nuevo parámetro
+
 ) {
     Card(
         modifier = Modifier
@@ -379,6 +416,13 @@ fun EquipoCard(
                         onClick = {
                             expanded = false
                             onDelete(equipo)
+                        }
+                    )
+                    DropdownMenuItem( // <-- esta es la nueva opción
+                        text = { Text("Ver software") },
+                        onClick = {
+                            expanded = false
+                            onViewSoftwares(equipo.nombre)
                         }
                     )
                 }
@@ -756,6 +800,69 @@ fun EditarEquipoDialog(
                         enabled = nombre.isNotBlank()
                     ) {
                         Text("Guardar cambios")
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun VerSoftwareInstalado(
+    equipoNombre: String,
+    onClose: () -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    val instalaciones = remember { mutableStateListOf<InstalacionSoftware>() }
+    val softwareList = remember { mutableStateListOf<Software>() }
+
+    // Cargar datos desde Firestore
+    LaunchedEffect(equipoNombre) {
+        // Cargar instalaciones del equipo
+        db.collection("instalaciones")
+            .whereEqualTo("equipoId", equipoNombre)
+            .get()
+            .addOnSuccessListener { result ->
+                instalaciones.clear()
+                instalaciones.addAll(result.mapNotNull { it.toObject(InstalacionSoftware::class.java) })
+            }
+
+        // Cargar catálogo de software (para obtener los nombres completos)
+        db.collection("software")
+            .get()
+            .addOnSuccessListener { result ->
+                softwareList.clear()
+                softwareList.addAll(result.mapNotNull { it.toObject(Software::class.java) })
+            }
+    }
+
+    Dialog(onDismissRequest = onClose) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 6.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Software instalados en: $equipoNombre", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(8.dp))
+
+                if (instalaciones.isEmpty()) {
+                    Text("No hay software registrado para este equipo.")
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                        items(instalaciones) { inst ->
+                            val software = softwareList.find { it.nombre == inst.softwareId }
+                            val nombreSoftware = software?.nombre ?: inst.softwareId
+                            Text("• $nombreSoftware (${inst.licencia})", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onClose) {
+                        Text("Cerrar")
                     }
                 }
             }
