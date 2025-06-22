@@ -185,7 +185,10 @@ fun InventarioScreen(
                         it.nombre.contains(query, ignoreCase = true) ||
                                 it.inventario.contains(query, ignoreCase = true) ||
                                 it.estado.contains(query, ignoreCase = true) ||
-                                it.laboratorio.contains(query, ignoreCase = true)
+                                it.marca.contains(query, ignoreCase = true) ||
+                                it.procesador.contains(query, ignoreCase = true) ||
+                                it.laboratorioId.contains(query, ignoreCase = true) ||
+                                it.ram.toString().contains(query)
                     }.sortedWith(
                         when (sortOption) {
                             "Nombre" -> compareBy { it.nombre }
@@ -341,13 +344,18 @@ fun EquipoCard(
                 )
 
                 Text(
-                    text = equipo.laboratorio,
+                    text = "Marca: ${equipo.marca} • CPU: ${equipo.procesador} • RAM: ${equipo.ram}GB",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = "Lab: ${equipo.laboratorioId}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // Menú de opciones con ícono ⋮
             var expanded by remember { mutableStateOf(false) }
 
             Box {
@@ -381,6 +389,7 @@ fun EquipoCard(
 
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgregarEquipoDialog(
@@ -390,11 +399,26 @@ fun AgregarEquipoDialog(
     var nombre by remember { mutableStateOf("") }
     var inventario by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
+    var marca by remember { mutableStateOf("") }
+    var procesador by remember { mutableStateOf("") }
+    var ram by remember { mutableStateOf("") }
+    var laboratorioId by remember { mutableStateOf("") }
     var estadoExpanded by remember { mutableStateOf(false) }
     var estado by remember { mutableStateOf("Excelente") }
-    var laboratorio by remember { mutableStateOf("") }
 
-    val estados = listOf("Excelente", "Bueno", "Regular", "Malo", "Dañado", "Inservible")
+    val estados = listOf("Excelente", "Bueno", "Malo", "Dañado", "Inservible")
+
+    var laboratorioExpanded by remember { mutableStateOf(false) }
+    var laboratorios by remember { mutableStateOf(listOf<String>()) }
+
+    // 🔄 Carga de laboratorios desde Firestore
+    LaunchedEffect(Unit) {
+        FirebaseFirestore.getInstance().collection("laboratorios")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                laboratorios = snapshot.documents.mapNotNull { it.getString("nombre") }
+            }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -407,45 +431,57 @@ fun AgregarEquipoDialog(
                     .padding(24.dp)
                     .fillMaxWidth()
             ) {
-                Text(
-                    "Agregar nuevo equipo",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
+                Text("Agregar nuevo equipo", style = MaterialTheme.typography.headlineSmall)
                 Spacer(Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
                     label = { Text("Nombre del equipo") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = inventario,
                     onValueChange = { inventario = it },
-                    label = { Text("Número de inventario") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    label = { Text("Inventario") },
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
                     label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = marca,
+                    onValueChange = { marca = it },
+                    label = { Text("Marca") },
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-                // Dropdown para estado
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = procesador,
+                    onValueChange = { procesador = it },
+                    label = { Text("Procesador") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = ram,
+                    onValueChange = { ram = it },
+                    label = { Text("RAM (GB)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(8.dp))
                 ExposedDropdownMenuBox(
                     expanded = estadoExpanded,
                     onExpandedChange = { estadoExpanded = !estadoExpanded }
@@ -455,21 +491,20 @@ fun AgregarEquipoDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Estado") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = estadoExpanded) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(estadoExpanded) },
                         modifier = Modifier
                             .menuAnchor()
-                            .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = estadoExpanded,
                         onDismissRequest = { estadoExpanded = false }
                     ) {
-                        estados.forEach { item ->
+                        estados.forEach {
                             DropdownMenuItem(
-                                text = { Text(item) },
+                                text = { Text(it) },
                                 onClick = {
-                                    estado = item
+                                    estado = it
                                     estadoExpanded = false
                                 }
                             )
@@ -478,17 +513,37 @@ fun AgregarEquipoDialog(
                 }
 
                 Spacer(Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = laboratorio,
-                    onValueChange = { laboratorio = it },
-                    label = { Text("Laboratorio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                ExposedDropdownMenuBox(
+                    expanded = laboratorioExpanded,
+                    onExpandedChange = { laboratorioExpanded = !laboratorioExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = laboratorioId,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Laboratorio") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(laboratorioExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = laboratorioExpanded,
+                        onDismissRequest = { laboratorioExpanded = false }
+                    ) {
+                        laboratorios.forEach {
+                            DropdownMenuItem(
+                                text = { Text(it) },
+                                onClick = {
+                                    laboratorioId = it
+                                    laboratorioExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 Spacer(Modifier.height(24.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -504,8 +559,11 @@ fun AgregarEquipoDialog(
                                     nombre = nombre.trim(),
                                     inventario = inventario.trim(),
                                     descripcion = descripcion.trim(),
+                                    marca = marca.trim(),
+                                    procesador = procesador.trim(),
+                                    ram = ram.toIntOrNull() ?: 0,
                                     estado = estado,
-                                    laboratorio = laboratorio.trim()
+                                    laboratorioId = laboratorioId.trim()
                                 )
                             )
                         },
@@ -519,6 +577,8 @@ fun AgregarEquipoDialog(
     }
 }
 
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditarEquipoDialog(
@@ -529,11 +589,27 @@ fun EditarEquipoDialog(
     var nombre by remember { mutableStateOf(equipo.nombre) }
     var inventario by remember { mutableStateOf(equipo.inventario) }
     var descripcion by remember { mutableStateOf(equipo.descripcion) }
+    var marca by remember { mutableStateOf(equipo.marca) }
+    var procesador by remember { mutableStateOf(equipo.procesador) }
+    var ram by remember { mutableStateOf(equipo.ram.toString()) }
+    var laboratorioId by remember { mutableStateOf(equipo.laboratorioId) }
     var estadoExpanded by remember { mutableStateOf(false) }
     var estado by remember { mutableStateOf(equipo.estado) }
-    var laboratorio by remember { mutableStateOf(equipo.laboratorio) }
 
     val estados = listOf("Excelente", "Bueno", "Regular", "Malo", "Dañado", "Inservible")
+
+    val laboratorioList = remember { mutableStateListOf<String>() }
+    var labExpanded by remember { mutableStateOf(false) }
+
+    // 🔄 Cargar nombres de laboratorios desde Firestore
+    LaunchedEffect(Unit) {
+        FirebaseFirestore.getInstance().collection("laboratorios")
+            .get()
+            .addOnSuccessListener { result ->
+                laboratorioList.clear()
+                laboratorioList.addAll(result.mapNotNull { it.getString("nombre") })
+            }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -553,8 +629,7 @@ fun EditarEquipoDialog(
                     value = nombre,
                     onValueChange = { nombre = it },
                     label = { Text("Nombre del equipo") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
@@ -562,16 +637,35 @@ fun EditarEquipoDialog(
                     onValueChange = { inventario = it },
                     label = { Text("Inventario") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    readOnly = true // Clave para no duplicar documentos
+                    readOnly = true
                 )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = descripcion,
                     onValueChange = { descripcion = it },
                     label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = marca,
+                    onValueChange = { marca = it },
+                    label = { Text("Marca") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = procesador,
+                    onValueChange = { procesador = it },
+                    label = { Text("Procesador") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = ram,
+                    onValueChange = { ram = it },
+                    label = { Text("RAM (GB)") },
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -587,8 +681,7 @@ fun EditarEquipoDialog(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(estadoExpanded) },
                         modifier = Modifier
                             .menuAnchor()
-                            .fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
+                            .fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = estadoExpanded,
@@ -607,20 +700,44 @@ fun EditarEquipoDialog(
                 }
 
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = laboratorio,
-                    onValueChange = { laboratorio = it },
-                    label = { Text("Laboratorio") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                ExposedDropdownMenuBox(
+                    expanded = labExpanded,
+                    onExpandedChange = { labExpanded = !labExpanded }
+                ) {
+                    OutlinedTextField(
+                        value = laboratorioId,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Laboratorio") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = labExpanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = labExpanded,
+                        onDismissRequest = { labExpanded = false }
+                    ) {
+                        laboratorioList.forEach { lab ->
+                            DropdownMenuItem(
+                                text = { Text(lab) },
+                                onClick = {
+                                    laboratorioId = lab
+                                    labExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
 
                 Spacer(Modifier.height(24.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancelar")
+                    }
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = {
@@ -628,8 +745,11 @@ fun EditarEquipoDialog(
                                 equipo.copy(
                                     nombre = nombre.trim(),
                                     descripcion = descripcion.trim(),
+                                    marca = marca.trim(),
+                                    procesador = procesador.trim(),
+                                    ram = ram.toIntOrNull() ?: 0,
                                     estado = estado,
-                                    laboratorio = laboratorio.trim()
+                                    laboratorioId = laboratorioId.trim()
                                 )
                             )
                         },
