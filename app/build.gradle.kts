@@ -41,7 +41,9 @@ android {
         viewBinding = true // Habilita ViewBinding si es necesario
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.1.1" // Versión del compilador de Compose
+        //kotlinCompilerExtensionVersion = "1.1.1" // Versión del compilador de Compose
+        kotlinCompilerExtensionVersion = "1.5.11"
+
     }
 }
 

@@ -54,6 +54,11 @@ class MainActivity : ComponentActivity() {
                             InstalacionSoftwareScreen(drawerState, scope)
                         }
                     }
+                    composable("horarios") {
+                        PantallaConMenu(navController = navController) { drawerState, scope ->
+                            HorarioScreen(drawerState, scope)
+                        }
+                    }
                 }
             }
         }
