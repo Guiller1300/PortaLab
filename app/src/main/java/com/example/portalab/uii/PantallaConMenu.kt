@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ReportProblem
 import androidx.compose.material.icons.filled.Schedule
 
 @Composable
@@ -122,8 +123,8 @@ fun PantallaConMenu(
                     Triple("Inventario", Icons.Default.Inventory, "inventario"),
                     Triple("Software", Icons.Default.Star, "software"),
                     Triple("Instalaciones", Icons.Default.Star, "instalacionSoftware"),
-                    Triple("Horarios", Icons.Default.Schedule, "horarios")
-
+                    Triple("Horarios", Icons.Default.Schedule, "horarios"),
+                    Triple("Incidencias", Icons.Default.ReportProblem, "incidencias") // ← Agregado aquí
                 )
 
                 items.forEach { (label, icon, route) ->
