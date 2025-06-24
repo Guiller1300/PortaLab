@@ -1,101 +1,105 @@
 package com.example.portalab.uii
 
+import android.content.res.Configuration
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.portalab.model.HorarioClase
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlin.math.absoluteValue
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.portalab.model.HorarioClase
+import kotlin.math.absoluteValue
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HorarioScreen(drawerState: DrawerState, scope: CoroutineScope) {
+fun DetalleLaboratorioConHorario(
+    laboratorioId: String,
+    laboratorioNombre: String,
+    horario: List<HorarioClase>,
+    onAgregarHorario: (HorarioClase) -> Unit
+) {
     var showDialog by remember { mutableStateOf(false) }
-    var horario by remember { mutableStateOf(listOf<HorarioClase>()) }
-    val laboratorioId = remember { mutableStateOf("lab01") }
-    var laboratorioNombre by remember { mutableStateOf("Cargando...") }
 
-    val db = FirebaseFirestore.getInstance()
+    Column(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+        SugerirLandscape()
+        Text(
+            text = "Horario de $laboratorioNombre",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-    // Cargar nombre del laboratorio y su horario
-    LaunchedEffect(Unit) {
-        // Obtener nombre del laboratorio
-        val labDoc = db.collection("laboratorios").document(laboratorioId.value).get().await()
-        laboratorioNombre = labDoc.getString("nombre") ?: "Laboratorio"
-
-        // Cargar horarios
-        val snapshot = db.collection("horarios")
-            .whereEqualTo("laboratorioId", laboratorioId.value)
-            .get()
-            .await()
-
-        horario = snapshot.documents.mapNotNull { it.toObject(HorarioClase::class.java) }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Horario: $laboratorioNombre", fontSize = 20.sp) },
-                navigationIcon = {
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                        Icon(Icons.Default.Add, contentDescription = "Menú")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar clase")
-            }
-        }
-    ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
-                .padding(padding)
-                .padding(8.dp)
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
+                .border(1.dp, Color.Gray)
+                .horizontalScroll(rememberScrollState())
                 .verticalScroll(rememberScrollState())
         ) {
-            HorarioGrid(horario = horario)
+            HorarioDinamico(horario = horario)
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        Button(
+            onClick = { showDialog = true },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Agregar clase")
+            Spacer(Modifier.width(4.dp))
+            Text("Agregar")
         }
     }
 
     if (showDialog) {
         FormularioAgregarHorario(
-            laboratorioId = laboratorioId.value,
-            nombreLaboratorio = laboratorioNombre, // 👈 se pasa aquí también
+            laboratorioId = laboratorioId,
             onAgregar = {
-                db.collection("horarios").add(it).addOnSuccessListener {
-                    // Recargar horarios
-                    db.collection("horarios")
-                        .whereEqualTo("laboratorioId", laboratorioId.value)
-                        .get()
-                        .addOnSuccessListener { snapshot ->
-                            horario = snapshot.documents.mapNotNull { doc ->
-                                doc.toObject(HorarioClase::class.java)
-                            }
-                        }
-                }
+                onAgregarHorario(it)
                 showDialog = false
             },
             onDismiss = { showDialog = false }
@@ -103,45 +107,187 @@ fun HorarioScreen(drawerState: DrawerState, scope: CoroutineScope) {
     }
 }
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HorarioGrid(horario: List<HorarioClase>) {
-    val dias = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado")
-    val horas = listOf("7:00", "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00")
+fun FormularioAgregarHorario(
+    laboratorioId: String,
+    onAgregar: (HorarioClase) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var dia by remember { mutableStateOf("") }
+    var horaInicio by remember { mutableStateOf("") }
+    var horaFin by remember { mutableStateOf("") }
+    var asunto by remember { mutableStateOf("") }
 
-    Column {
-        Row {
-            Celda("Hora", header = true)
-            dias.forEach { Celda(it, header = true) }
-        }
+    val diasSemana = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo")
+    var expanded by remember { mutableStateOf(false) }
 
-        horas.forEach { hora ->
-            Row {
-                Celda(hora, header = true)
-                dias.forEach { dia ->
-                    val clases = horario.filter {
-                        it.dia.equals(dia, ignoreCase = true) && horaEnRango(hora, it.horaInicio, it.horaFin)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            tonalElevation = 4.dp
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text("Agregar Actividad", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(12.dp))
+
+                // Día (Dropdown)
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = dia,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Día de la semana") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        diasSemana.forEach { opcion ->
+                            DropdownMenuItem(
+                                text = { Text(opcion) },
+                                onClick = {
+                                    dia = opcion
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
-                    val asunto = clases.firstOrNull()?.asunto ?: ""
-                    CeldaClase(asunto, asunto)
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                // Hora inicio y fin en una fila
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = horaInicio,
+                        onValueChange = { horaInicio = it },
+                        label = { Text("Inicio") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = horaFin,
+                        onValueChange = { horaFin = it },
+                        label = { Text("Fin") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = asunto,
+                    onValueChange = { asunto = it },
+                    label = { Text("Actividad") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text("Cancelar") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = {
+                        onAgregar(
+                            HorarioClase(
+                                laboratorioId = laboratorioId,
+                                dia = dia.trim(),
+                                horaInicio = horaInicio.trim(),
+                                horaFin = horaFin.trim(),
+                                asunto = asunto.trim()
+                            )
+                        )
+                    }) {
+                        Text("Agregar")
+                    }
                 }
             }
         }
     }
 }
+@Composable
+fun HorarioDinamico(horario: List<HorarioClase>) {
+    val diasSemana = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes")
+    val diasFinde = listOf("Sábado", "Domingo")
 
-fun horaEnRango(hora: String, inicio: String, fin: String): Boolean {
-    val horaInt = hora.replace(":", "").toIntOrNull() ?: return false
-    val inicioInt = inicio.replace(":", "").toIntOrNull() ?: return false
-    val finInt = fin.replace(":", "").toIntOrNull() ?: return false
-    return horaInt in inicioInt until finInt
+    // Extraer rangos únicos para semana
+    val rangosSemana = horario
+        .filter { it.dia in diasSemana }
+        .map { "${it.horaInicio} - ${it.horaFin}" }
+        .distinct()
+        .sortedWith(compareBy { HoraRango(it) })
+
+    // Extraer rangos únicos para finde
+    val rangosFinde = horario
+        .filter { it.dia in diasFinde }
+        .map { "${it.horaInicio} - ${it.horaFin}" }
+        .distinct()
+        .sortedWith(compareBy { HoraRango(it) })
+
+    Column {
+        // Tabla semana
+        Text("Semana", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(4.dp))
+        Row {
+            Celda("Hora", header = true)
+            diasSemana.forEach { Celda(it, header = true) }
+        }
+
+        rangosSemana.forEach { rango ->
+            Row {
+                Celda(rango, header = true)
+                diasSemana.forEach { dia ->
+                    val clase = horario.find {
+                        it.dia.equals(dia, ignoreCase = true) &&
+                                "${it.horaInicio} - ${it.horaFin}" == rango
+                    }
+                    CeldaClase(clase?.asunto ?: "", clase?.asunto)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Tabla finde
+        Text("Fin de semana", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(4.dp))
+        Row {
+            Celda("Hora", header = true)
+            diasFinde.forEach { Celda(it, header = true) }
+        }
+
+        rangosFinde.forEach { rango ->
+            Row {
+                Celda(rango, header = true)
+                diasFinde.forEach { dia ->
+                    val clase = horario.find {
+                        it.dia.equals(dia, ignoreCase = true) &&
+                                "${it.horaInicio} - ${it.horaFin}" == rango
+                    }
+                    CeldaClase(clase?.asunto ?: "", clase?.asunto)
+                }
+            }
+        }
+    }
 }
-
+fun HoraRango(rango: String): Int {
+    // Espera formato "8:00 - 10:00"
+    val inicio = rango.split(" - ").firstOrNull() ?: "0:00"
+    val partes = inicio.split(":").map { it.toIntOrNull() ?: 0 }
+    return (partes.getOrElse(0) { 0 }) * 60 + (partes.getOrElse(1) { 0 })
+}
 @Composable
 fun Celda(text: String, header: Boolean = false) {
     Box(
         modifier = Modifier
-            .width(80.dp)
+            .width(100.dp) // Aumenté el ancho
             .height(60.dp)
             .border(1.dp, Color.Gray)
             .background(if (header) Color(0xFF1976D2) else Color.White),
@@ -150,7 +296,10 @@ fun Celda(text: String, header: Boolean = false) {
         Text(
             text = text,
             color = if (header) Color.White else Color.Black,
-            fontSize = 12.sp
+            fontSize = 11.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -166,206 +315,52 @@ fun CeldaClase(text: String, key: String?) {
         else colores[key.hashCode().absoluteValue % colores.size]
     }
 
+    var expanded by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
-            .width(80.dp)
+            .width(100.dp)
             .height(60.dp)
             .border(1.dp, Color.LightGray)
-            .background(color),
+            .background(color)
+            .clickable { if (text.isNotBlank()) expanded = true }, // Abre el menú solo si hay texto
         contentAlignment = Alignment.Center
     ) {
-        Text(text = text, color = Color.White, fontSize = 10.sp, maxLines = 2)
-    }
-}
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 10.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FormularioAgregarHorario(
-    laboratorioId: String,
-    nombreLaboratorio: String, // <-- Se recibe el nombre
-    onAgregar: (HorarioClase) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val horasDisponibles = listOf(
-        "7:00", "8:00", "9:00", "10:00", "11:00",
-        "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"
-    )
-    val diasSemana = listOf("Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado")
-
-    var dia by remember { mutableStateOf("") }
-    var horaInicio by remember { mutableStateOf("") }
-    var horaFin by remember { mutableStateOf("") }
-    var asunto by remember { mutableStateOf("") }
-
-    var diaExpanded by remember { mutableStateOf(false) }
-    var inicioExpanded by remember { mutableStateOf(false) }
-    var finExpanded by remember { mutableStateOf(false) }
-    var errorHora by remember { mutableStateOf(false) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
+        // Popup o menú desplegable con el contenido completo
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text("Nueva Actividad", style = MaterialTheme.typography.titleLarge)
-
-                Spacer(Modifier.height(12.dp))
-
-                // 🔷 Campo laboratorio solo lectura
-                OutlinedTextField(
-                    value = nombreLaboratorio,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Laboratorio") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(12.dp))
-
-                // Día
-                ExposedDropdownMenuBox(
-                    expanded = diaExpanded,
-                    onExpandedChange = { diaExpanded = !diaExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = dia,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Día de la semana") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = diaExpanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = diaExpanded,
-                        onDismissRequest = { diaExpanded = false }
-                    ) {
-                        diasSemana.forEach { opcion ->
-                            DropdownMenuItem(
-                                text = { Text(opcion) },
-                                onClick = {
-                                    dia = opcion
-                                    diaExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Hora inicio y fin
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ExposedDropdownMenuBox(
-                        expanded = inicioExpanded,
-                        onExpandedChange = { inicioExpanded = !inicioExpanded },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        OutlinedTextField(
-                            value = horaInicio,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Hora inicio") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = inicioExpanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = inicioExpanded,
-                            onDismissRequest = { inicioExpanded = false }
-                        ) {
-                            horasDisponibles.forEach { hora ->
-                                DropdownMenuItem(
-                                    text = { Text(hora) },
-                                    onClick = {
-                                        horaInicio = hora
-                                        inicioExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    ExposedDropdownMenuBox(
-                        expanded = finExpanded,
-                        onExpandedChange = { finExpanded = !finExpanded },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        OutlinedTextField(
-                            value = horaFin,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Hora fin") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = finExpanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = finExpanded,
-                            onDismissRequest = { finExpanded = false }
-                        ) {
-                            horasDisponibles.forEach { hora ->
-                                DropdownMenuItem(
-                                    text = { Text(hora) },
-                                    onClick = {
-                                        horaFin = hora
-                                        finExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (errorHora) {
-                    Text(
-                        "La hora de fin debe ser mayor que la de inicio.",
-                        color = Color.Red,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Asunto
-                OutlinedTextField(
-                    value = asunto,
-                    onValueChange = { asunto = it },
-                    label = { Text("Nombre de la clase o actividad") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancelar") }
-                    Spacer(Modifier.width(8.dp))
-                    Button(onClick = {
-                        val indexInicio = horasDisponibles.indexOf(horaInicio)
-                        val indexFin = horasDisponibles.indexOf(horaFin)
-
-                        if (dia.isNotBlank() && horaInicio.isNotBlank() && horaFin.isNotBlank() && asunto.isNotBlank()) {
-                            if (indexFin > indexInicio) {
-                                errorHora = false
-                                onAgregar(
-                                    HorarioClase(
-                                        laboratorioId = laboratorioId,
-                                        dia = dia.trim(),
-                                        horaInicio = horaInicio.trim(),
-                                        horaFin = horaFin.trim(),
-                                        asunto = asunto.trim()
-                                    )
-                                )
-                            } else {
-                                errorHora = true
-                            }
-                        }
-                    }) {
-                        Text("Guardar")
-                    }
-                }
-            }
+            Text(
+                text = text,
+                modifier = Modifier.padding(8.dp),
+                color = Color.Black,
+                fontSize = 12.sp
+            )
         }
     }
 }
+@Composable
+fun SugerirLandscape() {
+    val configuration = LocalConfiguration.current
+    val context = LocalContext.current
 
+    LaunchedEffect(configuration.orientation) {
+        if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            Toast.makeText(
+                context,
+                "Para una mejor visualización, gire su dispositivo",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+}

@@ -1,4 +1,4 @@
-package com.example.portalab.ui
+package com.example.portalab.uii
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn

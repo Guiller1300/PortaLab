@@ -1,5 +1,6 @@
 package com.example.portalab.uii
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,18 +18,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.portalab.model.HorarioClase
 import com.example.portalab.model.Laboratorio
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
+import com.example.portalab.uii.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LaboratorioScreen(drawerState: DrawerState, scope: CoroutineScope) {
     val db = FirebaseFirestore.getInstance()
     val laboratorios = remember { mutableStateListOf<Laboratorio>() }
+    val horarios = remember { mutableStateListOf<HorarioClase>() }
+
     var showDialog by remember { mutableStateOf(false) }
     var laboratorioAEditar by remember { mutableStateOf<Laboratorio?>(null) }
+    var laboratorioSeleccionado by remember { mutableStateOf<Laboratorio?>(null) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val localScope = rememberCoroutineScope()
 
@@ -44,10 +51,19 @@ fun LaboratorioScreen(drawerState: DrawerState, scope: CoroutineScope) {
                 laboratorios.clear()
                 laboratorios.addAll(lista)
             }
+
+        db.collection("horarios").get()
+            .addOnSuccessListener { result ->
+                val lista = result.mapNotNull { it.toObject(HorarioClase::class.java) }
+                horarios.clear()
+                horarios.addAll(lista)
+            }
     }
 
     Scaffold(
+
         topBar = {
+
             TopAppBar(
                 title = {
                     if (buscarActivo) {
@@ -108,51 +124,88 @@ fun LaboratorioScreen(drawerState: DrawerState, scope: CoroutineScope) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar")
+            if (laboratorioSeleccionado == null) {
+                FloatingActionButton(onClick = { showDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Agregar")
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        val filtrados = laboratorios
-            .filter { it.nombre.contains(query, ignoreCase = true) }
-            .sortedBy {
-                when (sortOption) {
-                    "Nombre" -> it.nombre
-                    "Pabellón" -> it.pabellon
-                    else -> it.nombre
-                }
-            }
 
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(filtrados) { lab ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp, horizontal = 8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
+        if (laboratorioSeleccionado == null) {
+            val filtrados = laboratorios
+                .filter { it.nombre.contains(query, ignoreCase = true) }
+                .sortedBy {
+                    when (sortOption) {
+                        "Nombre" -> it.nombre
+                        "Pabellón" -> it.pabellon
+                        else -> it.nombre
+                    }
+                }
+
+            LazyColumn(modifier = Modifier.padding(padding)) {
+                items(filtrados) { lab ->
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(vertical = 4.dp, horizontal = 8.dp)
+                            .clickable { laboratorioSeleccionado = lab },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(lab.nombre, style = MaterialTheme.typography.titleMedium)
-                            Text("${lab.pabellon} • ${lab.descripcion}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        IconButton(onClick = { laboratorioAEditar = lab }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { laboratorioSeleccionado = lab }
+                            ) {
+                                Text(lab.nombre, style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    "${lab.pabellon} • ${lab.descripcion}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            IconButton(onClick = { laboratorioAEditar = lab }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                            }
                         }
                     }
                 }
+            }
+        } else {
+            // Vista detallada con horario
+            Column(modifier = Modifier.padding(padding)) {
+                Button(onClick = { laboratorioSeleccionado = null }) {
+                    Text("Volver a la lista")
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                DetalleLaboratorioConHorario(
+                    laboratorioId = laboratorioSeleccionado!!.id,
+                    laboratorioNombre = laboratorioSeleccionado!!.nombre,
+                    horario = horarios.filter { it.laboratorioId == laboratorioSeleccionado!!.id },
+                    onAgregarHorario = { nuevo ->
+                        db.collection("horarios").add(nuevo)
+                            .addOnSuccessListener {
+                                horarios.add(nuevo)
+                                localScope.launch {
+                                    snackbarHostState.showSnackbar("Horario agregado")
+                                }
+                            }
+                    }
+                )
             }
         }
     }

@@ -24,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.CoroutineScope
 import com.google.firebase.firestore.QuerySnapshot
-import com.example.portalab.ui.InventarioScreen
 
 
 import androidx.compose.foundation.Image
@@ -123,7 +122,7 @@ fun PantallaConMenu(
                     Triple("Inventario", Icons.Default.Inventory, "inventario"),
                     Triple("Software", Icons.Default.Star, "software"),
                     Triple("Instalaciones", Icons.Default.Star, "instalacionSoftware"),
-                    Triple("Horarios", Icons.Default.Schedule, "horarios"),
+                    //Triple("Horarios", Icons.Default.Schedule, "horarios"),
                     Triple("Incidencias", Icons.Default.ReportProblem, "incidencias") // ← Agregado aquí
                 )
 

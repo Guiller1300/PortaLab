@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.portalab.ui.theme.PortaLabTheme
 import com.example.portalab.uii.*
-import com.example.portalab.ui.InventarioScreen
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("laboratorios") {
                         PantallaConMenu(navController = navController) { drawerState, scope ->
-                            LaboratorioScreen(drawerState, scope)
+                            LaboratorioScreen (drawerState, scope)
                         }
                     }
                     composable("software") {
@@ -54,11 +54,11 @@ class MainActivity : ComponentActivity() {
                             InstalacionSoftwareScreen(drawerState, scope)
                         }
                     }
-                    composable("horarios") {
+                    /*composable("horarios") {
                         PantallaConMenu(navController = navController) { drawerState, scope ->
                             HorarioScreen(drawerState, scope)
                         }
-                    }
+                    }*/
                     composable("incidencias") {
                         PantallaConMenu(navController = navController) { drawerState, scope ->
                             IncidenciaScreen(drawerState, scope)
